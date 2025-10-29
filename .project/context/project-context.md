@@ -12,16 +12,15 @@
 ## Key Requirements
 
 1. **Easy Customization**
-
    - Simple renaming of project names
    - Package name replacements
    - Configuration updates
 
 2. **Time Savings**
-
    - Eliminate repetitive setup tasks
    - Pre-configured development environment
    - Ready-to-use tooling
+   - **Single command to start dev server**
 
 3. **Scalability**
    - Support different project types
@@ -34,6 +33,40 @@
 - Focus on practicality and perfection
 - Should reduce friction, not add complexity
 
+## Tech Stack Decisions
+
+### Project Type
+- **Primary Focus:** Web applications (full-stack)
+
+### Monorepo Setup
+- **Tool:** pnpm workspace
+- **Package Manager:** pnpm (for all internal apps)
+- **Structure:** Single repo for single project (backend + frontend together)
+- **Task Runner:** Turborepo
+
+### Backend
+- **Framework:** NestJS
+- **Language:** TypeScript (mandatory, types everywhere)
+- **Start with:** Minimal setup, single endpoint, basic structure
+
+### Frontend
+- **Framework:** React SPA (Vite)
+- **Language:** TypeScript (mandatory, types everywhere)
+- **Start with:** Minimal setup, single page, single component
+
+### Production Serving
+- NestJS serves React build as static files from root endpoint
+
+### Development Serving
+- **Separate servers with Turborepo**
+- Backend: http://localhost:3000
+- Frontend: http://localhost:5173
+- Command: `pnpm dev` (runs both)
+
+### Tooling Notes
+- **ESLint/Prettier:** Keep minimal config (will replace with Biome later)
+- **Future:** Biome for linting + formatting
+
 ## Session Memory Reminders
 
 - **ALWAYS** update `.project` files when taking on big sub-tasks
@@ -41,11 +74,11 @@
 - Keep task tracking up-to-date for continuity
 - Document major decisions in `decisions/` directory
 
-## Next Steps
+## User Context
+- 7+ years coding experience
+- Wants to learn new tools, don't compromise on better tech
+- Using AI for speed and efficiency
 
-Waiting for user input on:
+## Current Focus
 
-- What types of projects to support (web, API, CLI, mobile, etc.)
-- Preferred tech stack and languages
-- Specific pain points in current setup process
-- Must-have features and nice-to-haves
+Setting up initial monorepo with pnpm workspace + Turborepo + NestJS + React (Vite).
