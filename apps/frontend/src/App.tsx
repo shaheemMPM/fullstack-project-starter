@@ -10,15 +10,22 @@ interface HealthResponse {
 	nodeVersion: string;
 }
 
-function App() {
+const App = () => {
 	const [health, setHealth] = useState<HealthResponse | null>(null);
 	const [error, setError] = useState<string>('');
 
 	useEffect(() => {
-		fetch('/api/health')
-			.then((res) => res.json())
-			.then((data) => setHealth(data))
-			.catch(() => setError('Failed to connect to backend'));
+		const fetchHealth = async () => {
+			try {
+				const res = await fetch('/api/health');
+				const data = await res.json();
+				setHealth(data);
+			} catch {
+				setError('Failed to connect to backend');
+			}
+		};
+
+		fetchHealth();
 	}, []);
 
 	return (
@@ -65,6 +72,6 @@ function App() {
 			)}
 		</div>
 	);
-}
+};
 
 export default App;
