@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import './App.css';
 
 interface HealthResponse {
 	status: string;
@@ -29,47 +28,35 @@ const App = () => {
 	}, []);
 
 	return (
-		<div style={{ padding: '2rem', fontFamily: 'system-ui, sans-serif' }}>
-			<h1>Project Starter</h1>
+		<div className='min-h-screen bg-gray-50 dark:bg-gray-900 p-8 font-sans'>
+			<div className='max-w-4xl mx-auto'>
+				<h1 className='text-4xl font-bold text-gray-900 dark:text-white mb-8'>
+					Project Starter
+				</h1>
 
-			{error && (
-				<div
-					style={{
-						padding: '1rem',
-						background: '#fee',
-						border: '1px solid #c33',
-						borderRadius: '4px',
-						color: '#c33',
-					}}
-				>
-					{error}
-				</div>
-			)}
+				{error && (
+					<div className='p-4 bg-red-50 border border-red-300 rounded text-red-700 mb-6'>
+						{error}
+					</div>
+				)}
 
-			{health && (
-				<div>
-					<h2>Backend Health</h2>
-					<pre
-						style={{
-							background: '#1e1e1e',
-							color: '#d4d4d4',
-							padding: '1rem',
-							borderRadius: '8px',
-							overflow: 'auto',
-							fontSize: '14px',
-							lineHeight: '1.5',
-						}}
-					>
-						<code>{JSON.stringify(health, null, 2)}</code>
-					</pre>
-				</div>
-			)}
+				{health && (
+					<div>
+						<h2 className='text-2xl font-semibold text-gray-800 dark:text-gray-200 mb-4'>
+							Backend Health
+						</h2>
+						<pre className='bg-gray-800 text-gray-200 p-4 rounded-lg overflow-auto text-sm leading-relaxed'>
+							<code>{JSON.stringify(health, null, 2)}</code>
+						</pre>
+					</div>
+				)}
 
-			{!health && !error && (
-				<div style={{ padding: '1rem', color: '#666' }}>
-					Loading backend health...
-				</div>
-			)}
+				{!health && !error && (
+					<div className='p-4 text-gray-600 dark:text-gray-400'>
+						Loading backend health...
+					</div>
+				)}
+			</div>
 		</div>
 	);
 };
