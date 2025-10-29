@@ -10,11 +10,13 @@ async function bootstrap() {
   // Global API prefix for all routes
   app.setGlobalPrefix('api');
 
-  // Enable CORS for development
-  app.enableCors({
-    origin: 'http://localhost:5173',
-    credentials: true,
-  });
+  // Enable CORS in development only
+  if (process.env.NODE_ENV !== 'production') {
+    app.enableCors({
+      origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+      credentials: true,
+    });
+  }
 
   // Serve static frontend files in production
   const frontendDistPath = join(
@@ -30,7 +32,9 @@ async function bootstrap() {
     app.setBaseViewsDir(frontendDistPath);
   }
 
-  await app.listen(process.env.PORT ?? 3000);
+  const port = process.env.PORT || 3000;
+  await app.listen(port);
+  console.log(`Application is running on: http://localhost:${port}`);
 }
 
 bootstrap().catch((err) => {
