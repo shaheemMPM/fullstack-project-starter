@@ -72,7 +72,7 @@ export const ApiExample = () => {
 				</h3>
 				<pre className="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 p-3 rounded text-xs overflow-x-auto">
 					<code className="text-gray-800 dark:text-gray-200">
-						{`import { api } from './lib/api';
+						{`import { api } from '@lib/api';
 
 // Call the health check endpoint
 const health = await api.health.check();
