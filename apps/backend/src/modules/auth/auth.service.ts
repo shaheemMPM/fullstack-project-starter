@@ -8,23 +8,10 @@ import * as bcrypt from 'bcrypt';
 import { eq } from 'drizzle-orm';
 import type { User } from '@/db';
 import { db, users } from '@/db';
+import type { AuthResponse, JwtPayload } from './auth.types';
 import type { ChangePasswordDto } from './dto/change-password.dto';
 import type { LoginDto } from './dto/login.dto';
 import type { SignupDto } from './dto/signup.dto';
-
-export interface JwtPayload {
-	sub: number; // user id
-	email: string;
-}
-
-export interface AuthResponse {
-	access_token: string;
-	user: {
-		id: number;
-		email: string;
-		name: string | null;
-	};
-}
 
 @Injectable()
 export class AuthService {

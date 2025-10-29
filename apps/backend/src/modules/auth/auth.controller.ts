@@ -1,6 +1,6 @@
 import { Body, Controller, Get, Post, Put } from '@nestjs/common';
-import type { AuthResponse } from './auth.service';
 import { AuthService } from './auth.service';
+import type { AuthResponse } from './auth.types';
 import {
 	CurrentUser,
 	type CurrentUserData,

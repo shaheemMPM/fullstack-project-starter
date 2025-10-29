@@ -1,14 +1,6 @@
 import * as os from 'node:os';
 import { Injectable } from '@nestjs/common';
-
-export interface HealthResponse {
-	status: 'ok';
-	timestamp: string;
-	uptime: number;
-	environment: string;
-	platform: string;
-	nodeVersion: string;
-}
+import type { HealthResponse } from './health.types';
 
 @Injectable()
 export class HealthService {
