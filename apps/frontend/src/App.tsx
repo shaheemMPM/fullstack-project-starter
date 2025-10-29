@@ -1,7 +1,7 @@
 import Layout from '@components/Layout';
 import ProtectedRoute from '@components/ProtectedRoute';
 import PublicRoute from '@components/PublicRoute';
-import { AuthProvider } from '@context/AuthContext';
+import { AuthProvider } from '@context';
 import AboutPage from '@pages/AboutPage';
 import ApiDemoPage from '@pages/ApiDemoPage';
 import HomePage from '@pages/HomePage';

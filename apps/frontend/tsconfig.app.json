@@ -29,6 +29,7 @@
 			"@/*": ["src/*"],
 			"@components/*": ["src/components/*"],
 			"@pages/*": ["src/pages/*"],
+			"@context": ["src/context/index.ts"],
 			"@context/*": ["src/context/*"],
 			"@lib/*": ["src/lib/*"],
 			"@examples/*": ["src/examples/*"]

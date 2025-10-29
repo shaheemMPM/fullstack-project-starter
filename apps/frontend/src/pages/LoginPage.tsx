@@ -1,4 +1,4 @@
-import { useAuth } from '@context/AuthContext';
+import { useAuth } from '@context';
 import type { ApiClientError } from '@repo/api-client';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
