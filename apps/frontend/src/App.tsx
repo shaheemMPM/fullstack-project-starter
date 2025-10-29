@@ -1,61 +1,26 @@
-import { useEffect, useState } from 'react';
-
-interface HealthResponse {
-	status: string;
-	timestamp: string;
-	uptime: number;
-	environment: string;
-	platform: string;
-	nodeVersion: string;
-}
+import { ApiExample } from './examples/ApiExample';
 
 const App = () => {
-	const [health, setHealth] = useState<HealthResponse | null>(null);
-	const [error, setError] = useState<string>('');
-
-	useEffect(() => {
-		const fetchHealth = async () => {
-			try {
-				const res = await fetch('/api/health');
-				const data = await res.json();
-				setHealth(data);
-			} catch {
-				setError('Failed to connect to backend');
-			}
-		};
-
-		fetchHealth();
-	}, []);
-
 	return (
-		<div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-8 font-sans">
+		<div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 p-8 font-sans">
 			<div className="max-w-4xl mx-auto">
-				<h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-8">
-					Project Starter
-				</h1>
+				<header className="mb-12">
+					<h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
+						Project Starter
+					</h1>
+					<p className="text-gray-600 dark:text-gray-400">
+						Full-stack monorepo with NestJS backend, React frontend, and
+						type-safe API client
+					</p>
+				</header>
 
-				{error && (
-					<div className="p-4 bg-red-50 border border-red-300 rounded text-red-700 mb-6">
-						{error}
-					</div>
-				)}
+				<main>
+					<ApiExample />
+				</main>
 
-				{health && (
-					<div>
-						<h2 className="text-2xl font-semibold text-gray-800 dark:text-gray-200 mb-4">
-							Backend Health
-						</h2>
-						<pre className="bg-gray-800 text-gray-200 p-4 rounded-lg overflow-auto text-sm leading-relaxed">
-							<code>{JSON.stringify(health, null, 2)}</code>
-						</pre>
-					</div>
-				)}
-
-				{!health && !error && (
-					<div className="p-4 text-gray-600 dark:text-gray-400">
-						Loading backend health...
-					</div>
-				)}
+				<footer className="mt-12 pt-8 border-t border-gray-200 dark:border-gray-700 text-center text-sm text-gray-500 dark:text-gray-400">
+					Built with React, NestJS, TypeScript, and Tailwind CSS
+				</footer>
 			</div>
 		</div>
 	);

@@ -1,103 +1,26 @@
-import type { ApiClientError } from '@repo/api-client';
+import type { HealthResponse } from '@repo/api-client';
 import { useState } from 'react';
 import { api } from '../lib/api';
 
 /**
  * Example component showing how to use the API client
- * This demonstrates all available endpoints with full type safety
+ * Demonstrates the health check endpoint with full type safety
  */
 export const ApiExample = () => {
-	const [status, setStatus] = useState<string>('');
+	const [health, setHealth] = useState<HealthResponse | null>(null);
 	const [loading, setLoading] = useState(false);
-
-	const handleSignup = async () => {
-		setLoading(true);
-		setStatus('');
-		try {
-			const response = await api.auth.signup({
-				email: 'user@example.com',
-				password: 'password123',
-				name: 'Test User',
-			});
-			setStatus(
-				`Signed up! Token: ${response.access_token.substring(0, 20)}...`,
-			);
-			console.log('User:', response.user);
-		} catch (error) {
-			if (error instanceof Error) {
-				setStatus(`Error: ${error.message}`);
-			}
-		} finally {
-			setLoading(false);
-		}
-	};
-
-	const handleLogin = async () => {
-		setLoading(true);
-		setStatus('');
-		try {
-			const response = await api.auth.login({
-				email: 'user@example.com',
-				password: 'password123',
-			});
-			setStatus(`Logged in! Token saved automatically`);
-			console.log('User:', response.user);
-		} catch (error) {
-			const apiError = error as ApiClientError;
-			setStatus(`Error ${apiError.statusCode}: ${apiError.message}`);
-		} finally {
-			setLoading(false);
-		}
-	};
-
-	const handleGetMe = async () => {
-		setLoading(true);
-		setStatus('');
-		try {
-			const user = await api.auth.me();
-			setStatus(`User: ${user.email}`);
-			console.log('User data:', user);
-		} catch (error) {
-			if (error instanceof Error) {
-				setStatus(`Error: ${error.message}`);
-			}
-		} finally {
-			setLoading(false);
-		}
-	};
-
-	const handleChangePassword = async () => {
-		setLoading(true);
-		setStatus('');
-		try {
-			const response = await api.auth.changePassword({
-				currentPassword: 'password123',
-				newPassword: 'newpassword123',
-			});
-			setStatus(response.message);
-		} catch (error) {
-			if (error instanceof Error) {
-				setStatus(`Error: ${error.message}`);
-			}
-		} finally {
-			setLoading(false);
-		}
-	};
-
-	const handleLogout = () => {
-		api.auth.logout();
-		setStatus('Logged out - token cleared');
-	};
+	const [error, setError] = useState<string>('');
 
 	const handleHealthCheck = async () => {
 		setLoading(true);
-		setStatus('');
+		setError('');
+		setHealth(null);
 		try {
-			const health = await api.health.check();
-			setStatus(`Health: ${health.status} at ${health.timestamp}`);
-		} catch (error) {
-			if (error instanceof Error) {
-				setStatus(`Error: ${error.message}`);
+			const result = await api.health.check();
+			setHealth(result);
+		} catch (err) {
+			if (err instanceof Error) {
+				setError(err.message);
 			}
 		} finally {
 			setLoading(false);
@@ -105,106 +28,61 @@ export const ApiExample = () => {
 	};
 
 	return (
-		<div className="p-8 max-w-2xl mx-auto">
-			<h1 className="text-2xl font-bold mb-6">API Client Example</h1>
+		<div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border border-gray-200 dark:border-gray-700">
+			<h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+				API Client Example
+			</h2>
 
-			<div className="space-y-2 mb-4">
-				<p className="text-sm text-gray-600">
-					Authenticated: {api.isAuthenticated() ? '✅ Yes' : '❌ No'}
-				</p>
-				{status && (
-					<p className="p-3 bg-gray-100 rounded text-sm font-mono">{status}</p>
-				)}
-			</div>
+			<p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+				This example shows how to use the type-safe API client to call backend
+				endpoints.
+			</p>
 
-			<div className="grid grid-cols-2 gap-2">
-				<button
-					type="button"
-					onClick={handleHealthCheck}
-					disabled={loading}
-					className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 disabled:opacity-50"
-				>
-					Health Check
-				</button>
+			<button
+				type="button"
+				onClick={handleHealthCheck}
+				disabled={loading}
+				className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+			>
+				{loading ? 'Checking...' : 'Check Backend Health'}
+			</button>
 
-				<button
-					type="button"
-					onClick={handleSignup}
-					disabled={loading}
-					className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
-				>
-					Signup
-				</button>
+			{error && (
+				<div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded text-red-700 dark:text-red-400 text-sm">
+					Error: {error}
+				</div>
+			)}
 
-				<button
-					type="button"
-					onClick={handleLogin}
-					disabled={loading}
-					className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
-				>
-					Login
-				</button>
+			{health && (
+				<div className="mt-4">
+					<h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+						Response:
+					</h3>
+					<pre className="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 p-3 rounded text-xs overflow-x-auto">
+						<code className="text-gray-800 dark:text-gray-200">
+							{JSON.stringify(health, null, 2)}
+						</code>
+					</pre>
+				</div>
+			)}
 
-				<button
-					type="button"
-					onClick={handleGetMe}
-					disabled={loading}
-					className="px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600 disabled:opacity-50"
-				>
-					Get Me
-				</button>
+			<div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+				<h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+					Code Example:
+				</h3>
+				<pre className="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 p-3 rounded text-xs overflow-x-auto">
+					<code className="text-gray-800 dark:text-gray-200">
+						{`import { api } from './lib/api';
 
-				<button
-					type="button"
-					onClick={handleChangePassword}
-					disabled={loading}
-					className="px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 disabled:opacity-50"
-				>
-					Change Password
-				</button>
+// Call the health check endpoint
+const health = await api.health.check();
 
-				<button
-					type="button"
-					onClick={handleLogout}
-					disabled={loading}
-					className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 disabled:opacity-50"
-				>
-					Logout
-				</button>
-			</div>
-
-			<div className="mt-6 p-4 bg-gray-50 rounded text-sm">
-				<h2 className="font-bold mb-2">Usage Example:</h2>
-				<pre className="text-xs overflow-x-auto">
-					{`import { api } from './lib/api';
-
-// Signup
-const response = await api.auth.signup({
-  email: 'user@example.com',
-  password: 'password123',
-  name: 'Test User'
-});
-
-// Login
-await api.auth.login({
-  email: 'user@example.com',
-  password: 'password123'
-});
-
-// Get current user
-const user = await api.auth.me();
-
-// Change password
-await api.auth.changePassword({
-  currentPassword: 'old',
-  newPassword: 'new'
-});
-
-// Logout
-api.auth.logout();
-
-// Health check
-const health = await api.health.check();`}
+// Full type safety - TypeScript knows the exact shape
+console.log(health.status);      // 'ok'
+console.log(health.timestamp);   // ISO string
+console.log(health.uptime);      // number
+console.log(health.environment); // string`}
+					</code>
 				</pre>
 			</div>
 		</div>
