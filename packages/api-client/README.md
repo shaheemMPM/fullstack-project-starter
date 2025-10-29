@@ -1,33 +1,27 @@
 # @repo/api-client
 
-Type-safe API client for communicating with the NestJS backend.
+Type-safe API client for communicating with the NestJS backend. Shared between frontend and any other clients.
 
 ## Features
 
-- ✅ Full TypeScript type safety
-- ✅ Automatic token management with localStorage
-- ✅ Authentication error handling
-- ✅ Simple, intuitive API
-- ✅ No code generation required
-- ✅ Works in monorepo with shared types
-
-## Installation
-
-The package is already installed in the frontend workspace. No additional setup needed.
+- Full TypeScript type safety
+- Automatic token management with localStorage
+- Authentication error handling
+- Simple, intuitive API
+- No code generation required
+- Shared types from backend
 
 ## Usage
 
-### Basic Setup
+### Setup
 
 ```typescript
 import { Api } from '@repo/api-client';
 
-// Create API instance
 export const api = new Api({
   baseUrl: 'http://localhost:3000',
   onAuthError: () => {
-    // Handle auth errors (e.g., redirect to login)
-    console.error('Please log in again');
+    // Handle 401 errors (e.g., redirect to login)
   },
 });
 ```
@@ -36,37 +30,33 @@ export const api = new Api({
 
 ```typescript
 // Signup
-const response = await api.auth.signup({
+await api.auth.signup({
   email: 'user@example.com',
   password: 'password123',
   name: 'John Doe', // optional
 });
-// Token is automatically saved and set
 
 // Login
-const response = await api.auth.login({
+await api.auth.login({
   email: 'user@example.com',
   password: 'password123',
 });
-// Token is automatically saved and set
 
-// Get current user (requires authentication)
+// Get current user
 const user = await api.auth.me();
-console.log(user.email);
 
-// Change password (requires authentication)
+// Change password
 await api.auth.changePassword({
-  currentPassword: 'oldpassword',
-  newPassword: 'newpassword',
+  currentPassword: 'old',
+  newPassword: 'new',
 });
 
 // Logout
 api.auth.logout();
-// Token is cleared from storage
 
-// Check if authenticated
+// Check authentication
 if (api.isAuthenticated()) {
-  console.log('User is logged in');
+  // User is logged in
 }
 ```
 
@@ -83,80 +73,86 @@ console.log(health.status); // "ok"
 import { ApiClientError } from '@repo/api-client';
 
 try {
-  await api.auth.login({ email: 'wrong@example.com', password: 'wrong' });
+  await api.auth.login({ email, password });
 } catch (error) {
   if (error instanceof ApiClientError) {
     console.error(`Error ${error.statusCode}: ${error.message}`);
-    console.error('API Error:', error.apiError);
-  }
-}
-```
-
-### Custom Token Storage
-
-By default, tokens are stored in localStorage. You can provide a custom storage implementation:
-
-```typescript
-import { Api, MemoryTokenStorage } from '@repo/api-client';
-
-// Use memory storage (useful for SSR or testing)
-const api = new Api({
-  baseUrl: 'http://localhost:3000',
-  tokenStorage: new MemoryTokenStorage(),
-});
-
-// Or create your own storage
-class CookieTokenStorage implements TokenStorage {
-  getToken() {
-    // Read from cookie
-  }
-  setToken(token: string) {
-    // Save to cookie
-  }
-  removeToken() {
-    // Remove cookie
   }
 }
 ```
 
 ## Architecture
 
-The API client is organized into:
+```
+api-client/
+├── src/
+│   ├── api.ts          # Main API class
+│   ├── client.ts       # HTTP client with auth support
+│   ├── endpoints/
+│   │   ├── auth.ts     # Auth endpoints
+│   │   └── health.ts   # Health endpoints
+│   ├── storage.ts      # Token storage (localStorage/memory)
+│   ├── types.ts        # Shared types from backend
+│   └── index.ts        # Public exports
+└── package.json
+```
 
-- **Client** (`client.ts`): Core HTTP client with authentication support
-- **Endpoints** (`endpoints/`): Typed endpoint methods grouped by resource
-- **Types** (`types.ts`): Shared TypeScript types matching backend DTOs
-- **Storage** (`storage.ts`): Token persistence layer
-- **API** (`api.ts`): Main entry point that brings everything together
+## How It Works
+
+### Type Sharing
+
+1. Backend defines types in `.types.ts` files (no decorators)
+2. Backend exports types through `src/types/index.ts`
+3. API client re-exports these types in `types.ts`
+4. Frontend imports types from `@repo/api-client`
+
+### Token Management
+
+1. Login/signup automatically saves JWT to localStorage
+2. HTTP client includes token in Authorization header
+3. On 401 error, token is cleared and `onAuthError` is called
+4. Custom storage can be provided (e.g., cookies, memory)
 
 ## Adding New Endpoints
 
-When you add new endpoints to the backend:
+When adding a new backend endpoint:
 
-1. Update `types.ts` with new request/response types
-2. Create or update endpoint class in `endpoints/`
-3. Export from `index.ts`
-4. Rebuild the package: `pnpm --filter @repo/api-client build`
-
-Example:
-
+1. **Add types** to `src/types.ts`:
 ```typescript
-// types.ts
 export interface CreatePostDto {
   title: string;
   content: string;
 }
 
-// endpoints/posts.ts
+export interface Post {
+  id: number;
+  title: string;
+  content: string;
+}
+```
+
+2. **Create endpoint class** in `src/endpoints/posts.ts`:
+```typescript
+import type { ApiClient } from '../client';
+import type { CreatePostDto, Post } from '../types';
+
 export class PostsEndpoints {
   constructor(private client: ApiClient) {}
 
-  async create(data: CreatePostDto) {
-    return this.client.post('/api/posts', data);
+  async create(data: CreatePostDto): Promise<Post> {
+    return this.client.post<Post>('/api/posts', data);
+  }
+
+  async list(): Promise<Post[]> {
+    return this.client.get<Post[]>('/api/posts');
   }
 }
+```
 
-// api.ts
+3. **Register in API class** in `src/api.ts`:
+```typescript
+import { PostsEndpoints } from './endpoints/posts';
+
 export class Api {
   public readonly posts: PostsEndpoints;
 
@@ -167,15 +163,45 @@ export class Api {
 }
 ```
 
+4. **Export types** from `src/index.ts`:
+```typescript
+export type { CreatePostDto, Post } from './types';
+```
+
+## Custom Token Storage
+
+```typescript
+import { Api, MemoryTokenStorage, type TokenStorage } from '@repo/api-client';
+
+// Use memory storage (for SSR or testing)
+const api = new Api({
+  baseUrl: 'http://localhost:3000',
+  tokenStorage: new MemoryTokenStorage(),
+});
+
+// Or implement custom storage
+class CookieTokenStorage implements TokenStorage {
+  getToken(): string | null {
+    // Read from cookie
+  }
+  setToken(token: string): void {
+    // Save to cookie
+  }
+  removeToken(): void {
+    // Remove cookie
+  }
+}
+```
+
 ## Development
 
 ```bash
 # Build the package
-pnpm --filter @repo/api-client build
+pnpm build
 
 # Watch mode
-pnpm --filter @repo/api-client dev
+pnpm dev
 
-# Check code quality
-pnpm --filter @repo/api-client check
+# Type check
+pnpm check
 ```
