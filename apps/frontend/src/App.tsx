@@ -1,4 +1,4 @@
-import { ApiExample } from './examples/ApiExample';
+import { ApiExample } from '@examples/ApiExample';
 
 const App = () => {
 	return (

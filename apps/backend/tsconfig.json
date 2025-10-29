@@ -22,7 +22,12 @@
 		"strictBindCallApply": true,
 		"noFallthroughCasesInSwitch": true,
 		"paths": {
-			"@/*": ["src/*"]
+			"@/*": ["src/*"],
+			"@modules/*": ["src/modules/*"],
+			"@db": ["src/db/index.ts"],
+			"@db/*": ["src/db/*"],
+			"@types": ["src/types/index.ts"],
+			"@types/*": ["src/types/*"]
 		}
 	}
 }

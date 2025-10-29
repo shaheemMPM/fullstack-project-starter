@@ -1,6 +1,6 @@
+import { api } from '@lib/api';
 import type { HealthResponse } from '@repo/api-client';
 import { useState } from 'react';
-import { api } from '../lib/api';
 
 /**
  * Example component showing how to use the API client
