@@ -28,8 +28,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 						name: null,
 					});
 				} catch {
-					// Token is invalid, clear it
-					api.auth.logout();
+					// If auth check fails, clear the user state
+					// The token will be automatically cleared by the ApiClient if it's a 401
+					setUser(null);
 				}
 			}
 			setIsLoading(false);
@@ -61,7 +62,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 				login,
 				signup,
 				logout,
-				isAuthenticated: !!user,
+				isAuthenticated: !!user || api.isAuthenticated(),
 			}}
 		>
 			{children}

@@ -1,10 +1,12 @@
 import Layout from '@components/Layout';
 import ProtectedRoute from '@components/ProtectedRoute';
+import PublicRoute from '@components/PublicRoute';
 import { AuthProvider } from '@context/AuthContext';
 import AboutPage from '@pages/AboutPage';
 import ApiDemoPage from '@pages/ApiDemoPage';
 import HomePage from '@pages/HomePage';
 import LoginPage from '@pages/LoginPage';
+import NotFoundPage from '@pages/NotFoundPage';
 import SignupPage from '@pages/SignupPage';
 import { BrowserRouter, Route, Routes } from 'react-router';
 
@@ -13,9 +15,23 @@ const App = () => {
 		<BrowserRouter>
 			<AuthProvider>
 				<Routes>
-					{/* Public routes */}
-					<Route path="/login" element={<LoginPage />} />
-					<Route path="/signup" element={<SignupPage />} />
+					{/* Public routes - redirect to home if authenticated */}
+					<Route
+						path="/login"
+						element={
+							<PublicRoute>
+								<LoginPage />
+							</PublicRoute>
+						}
+					/>
+					<Route
+						path="/signup"
+						element={
+							<PublicRoute>
+								<SignupPage />
+							</PublicRoute>
+						}
+					/>
 
 					{/* Protected routes */}
 					<Route
@@ -29,6 +45,9 @@ const App = () => {
 						<Route path="/about" element={<AboutPage />} />
 						<Route path="/api-demo" element={<ApiDemoPage />} />
 					</Route>
+
+					{/* 404 catch-all route */}
+					<Route path="*" element={<NotFoundPage />} />
 				</Routes>
 			</AuthProvider>
 		</BrowserRouter>

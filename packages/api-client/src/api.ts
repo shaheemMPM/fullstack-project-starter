@@ -53,8 +53,10 @@ export class Api {
 			this.client.setToken(storedToken);
 		}
 
-		// Initialize endpoints
-		this.auth = new AuthEndpoints(this.client);
+		// Initialize endpoints with token change callback
+		this.auth = new AuthEndpoints(this.client, (token) =>
+			this.setToken(token),
+		);
 		this.health = new HealthEndpoints(this.client);
 	}
 

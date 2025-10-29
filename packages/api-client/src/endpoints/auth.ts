@@ -8,7 +8,10 @@ import type {
 } from '../types';
 
 export class AuthEndpoints {
-	constructor(private client: ApiClient) {}
+	constructor(
+		private client: ApiClient,
+		private onTokenChange: (token: string | null) => void,
+	) {}
 
 	/**
 	 * Sign up a new user
@@ -19,7 +22,7 @@ export class AuthEndpoints {
 			data,
 		);
 		// Automatically set token after successful signup
-		this.client.setToken(response.access_token);
+		this.onTokenChange(response.access_token);
 		return response;
 	}
 
@@ -32,7 +35,7 @@ export class AuthEndpoints {
 			data,
 		);
 		// Automatically set token after successful login
-		this.client.setToken(response.access_token);
+		this.onTokenChange(response.access_token);
 		return response;
 	}
 
@@ -57,6 +60,6 @@ export class AuthEndpoints {
 	 * Logout - clears the token
 	 */
 	logout(): void {
-		this.client.setToken(null);
+		this.onTokenChange(null);
 	}
 }
