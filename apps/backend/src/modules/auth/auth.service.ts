@@ -6,11 +6,11 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { eq } from 'drizzle-orm';
-import { db, users } from '@/db';
 import type { User } from '@/db';
-import type { SignupDto } from './dto/signup.dto';
-import type { LoginDto } from './dto/login.dto';
+import { db, users } from '@/db';
 import type { ChangePasswordDto } from './dto/change-password.dto';
+import type { LoginDto } from './dto/login.dto';
+import type { SignupDto } from './dto/signup.dto';
 
 export interface JwtPayload {
 	sub: number; // user id

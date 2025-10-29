@@ -1,0 +1,32 @@
+{
+	// Use Biome as the default formatter
+	"editor.defaultFormatter": "biomejs.biome",
+
+	// Auto-format on save
+	"editor.formatOnSave": true,
+
+	// Organize imports on save
+	"editor.codeActionsOnSave": {
+		"source.fixAll.biome": "explicit"
+	},
+
+	// Disable other formatters to avoid conflicts
+	"[javascript]": {
+		"editor.defaultFormatter": "biomejs.biome"
+	},
+	"[javascriptreact]": {
+		"editor.defaultFormatter": "biomejs.biome"
+	},
+	"[typescript]": {
+		"editor.defaultFormatter": "biomejs.biome"
+	},
+	"[typescriptreact]": {
+		"editor.defaultFormatter": "biomejs.biome"
+	},
+	"[json]": {
+		"editor.defaultFormatter": "biomejs.biome"
+	},
+	"[jsonc]": {
+		"editor.defaultFormatter": "biomejs.biome"
+	}
+}

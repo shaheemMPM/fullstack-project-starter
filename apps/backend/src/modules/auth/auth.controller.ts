@@ -1,14 +1,14 @@
-import { Body, Controller, Post, Get, Put } from '@nestjs/common';
-import { AuthService } from './auth.service';
+import { Body, Controller, Get, Post, Put } from '@nestjs/common';
 import type { AuthResponse } from './auth.service';
-import { SignupDto } from './dto/signup.dto';
-import { LoginDto } from './dto/login.dto';
-import { ChangePasswordDto } from './dto/change-password.dto';
-import { Public } from './decorators/public.decorator';
+import { AuthService } from './auth.service';
 import {
 	CurrentUser,
 	type CurrentUserData,
 } from './decorators/current-user.decorator';
+import { Public } from './decorators/public.decorator';
+import { ChangePasswordDto } from './dto/change-password.dto';
+import { LoginDto } from './dto/login.dto';
+import { SignupDto } from './dto/signup.dto';
 
 @Controller('auth')
 export class AuthController {
