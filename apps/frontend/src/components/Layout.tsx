@@ -1,10 +1,18 @@
-import { Link, Outlet, useLocation } from 'react-router';
+import { useAuth } from '@context/AuthContext';
+import { Link, Outlet, useLocation, useNavigate } from 'react-router';
 
 const Layout = () => {
 	const location = useLocation();
+	const navigate = useNavigate();
+	const { user, logout } = useAuth();
 
 	const isActive = (path: string) => {
 		return location.pathname === path;
+	};
+
+	const handleLogout = () => {
+		logout();
+		navigate('/login');
 	};
 
 	return (
@@ -18,7 +26,7 @@ const Layout = () => {
 						>
 							Project Starter
 						</Link>
-						<div className="flex gap-6">
+						<div className="flex items-center gap-6">
 							<Link
 								to="/"
 								className={`transition-colors ${
@@ -49,6 +57,20 @@ const Layout = () => {
 							>
 								About
 							</Link>
+							{user && (
+								<div className="flex items-center gap-4 ml-4 pl-4 border-l border-gray-300 dark:border-gray-600">
+									<span className="text-sm text-gray-600 dark:text-gray-400">
+										{user.email}
+									</span>
+									<button
+										type="button"
+										onClick={handleLogout}
+										className="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+									>
+										Logout
+									</button>
+								</div>
+							)}
 						</div>
 					</div>
 				</div>
