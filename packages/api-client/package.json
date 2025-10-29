@@ -1,0 +1,22 @@
+{
+	"name": "@repo/api-client",
+	"version": "0.0.1",
+	"private": true,
+	"type": "module",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"default": "./dist/index.js"
+		}
+	},
+	"scripts": {
+		"build": "tsc",
+		"dev": "tsc --watch",
+		"check": "biome check .",
+		"check:write": "biome check --write .",
+		"check:unsafe": "biome check --write --unsafe ."
+	},
+	"devDependencies": {
+		"typescript": "^5.7.2"
+	}
+}

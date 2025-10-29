@@ -5,7 +5,7 @@ import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
 
-async function bootstrap() {
+const bootstrap = async () => {
 	const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
 	// Global validation pipe
@@ -45,7 +45,7 @@ async function bootstrap() {
 	const port = process.env.PORT || 3000;
 	await app.listen(port);
 	console.log(`Application is running on: http://localhost:${port}`);
-}
+};
 
 bootstrap().catch((err) => {
 	console.error('Failed to start application:', err);
