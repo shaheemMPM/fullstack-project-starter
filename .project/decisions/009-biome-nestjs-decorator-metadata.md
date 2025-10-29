@@ -73,29 +73,57 @@ export class HealthController {
 
 ## Biome Configuration Options
 
-We could disable the type import rule, but that loses benefits. Instead, we'll:
+**UPDATE (2025-10-29):** We discovered that Biome's `useImportType` rule repeatedly converts DI imports back to type-only imports, breaking NestJS. This is a known issue with Biome and decorator-based frameworks.
 
-1. **Keep the rule enabled** (it's generally good)
-2. **Manually fix DI classes** when Biome converts them
-3. **Add a comment** to prevent future auto-conversion:
+### Solution: Disable `useImportType` Rule for Backend Only
 
-```ts
-// @ts-expect-error - Need value import for DI metadata
-import { HealthService } from './health.service';
+Added to `biome.json`:
+```json
+{
+  "linter": {
+    "rules": {
+      "recommended": true,
+      "style": {
+        "useImportType": "error"  // Enabled globally
+      }
+    }
+  },
+  "overrides": [
+    {
+      "includes": ["apps/backend/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "useImportType": "off"  // Disabled only for backend
+          }
+        }
+      }
+    }
+  ]
+}
 ```
 
-Or better, just split imports clearly:
+**Why this approach:**
+- ✅ Biome cannot detect when a type is used by decorator metadata
+- ✅ This is a known limitation with NestJS, Angular, and other decorator-based frameworks
+- ✅ Disabling the rule **only for backend** prevents Biome from breaking DI
+- ✅ Frontend still gets the benefit of automatic `useImportType` enforcement
+- ✅ We can still use inline `type` syntax manually: `import { type HealthResponse, HealthService }`
 
+**Preferred import style in backend:**
 ```ts
-// Types only
-import type { HealthResponse } from './health.service';
-// Classes for DI
-import { HealthService } from './health.service';
+import { type HealthResponse, HealthService } from './health.service';
 ```
+
+This way:
+- `HealthResponse` is clearly a type-only import
+- `HealthService` is a value import (needed for DI)
+- Biome won't automatically convert it in backend files
+- Frontend files still get automatic type import enforcement
 
 ## Alternative Solutions Considered
 
-### 1. Disable `useImportType` rule ❌
+### 1. Disable `useImportType` rule globally ❌
 ```json
 {
   "linter": {
@@ -107,13 +135,17 @@ import { HealthService } from './health.service';
   }
 }
 ```
-**Why not:** Loses type-only import benefits everywhere
+**Why not:** Loses type-only import benefits everywhere, including frontend where it's safe and beneficial.
 
-### 2. Disable for backend only ❌
+### 2. Disable for backend only via separate config ❌
 Create separate `biome.json` in backend folder.
-**Why not:** Adds complexity, splits configuration
+**Why not:** Adds complexity, splits configuration across multiple files
 
-### 3. Use overrides for specific patterns ❌
+### 3. Use overrides to disable for backend only ✅ (Chosen)
+Use Biome's `overrides` feature to disable the rule only for `apps/backend/**`.
+**Why yes:** Best of both worlds - backend gets exception for NestJS DI, frontend keeps type import enforcement
+
+### 4. Use overrides for specific patterns ❌
 ```json
 {
   "overrides": [{
@@ -130,14 +162,13 @@ Create separate `biome.json` in backend folder.
 ```
 **Why not:** Too broad, misses other DI cases (services, guards, interceptors, etc.)
 
-### 4. Split imports manually ✅ (Chosen)
+### 5. Split imports manually ❌
 Be explicit about what's a type vs what's needed at runtime.
 
-**Why yes:**
-- Clearest intent
-- No rule changes needed
-- Works consistently
-- Easy to spot and fix
+**Why not:**
+- Biome would still convert these back to type-only imports (without overrides)
+- Requires constant manual fixing after every format/check
+- Not sustainable in practice
 
 ## Impact on Codebase
 
@@ -191,7 +222,9 @@ These are required for NestJS DI to work.
 
 ## Conclusion
 
-- Keep Biome's `useImportType` rule enabled (it's good)
-- Manually split imports when classes are used in DI
-- This is a known pattern with decorator metadata
-- Clear, explicit imports are better than disabling rules
+- **Disabled Biome's `useImportType` rule for backend only** using overrides
+- Frontend keeps the rule enabled for automatic type import enforcement
+- Use inline `type` syntax manually in backend: `import { type Interface, Class } from './file'`
+- This is a known limitation with Biome and decorator metadata frameworks
+- Overrides provide the best solution: backend stability + frontend type safety
+- No trade-offs: Each part of the monorepo gets the configuration it needs

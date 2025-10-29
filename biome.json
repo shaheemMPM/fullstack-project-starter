@@ -29,6 +29,18 @@
 			}
 		}
 	},
+	"overrides": [
+		{
+			"includes": ["apps/backend/**"],
+			"linter": {
+				"rules": {
+					"style": {
+						"useImportType": "off"
+					}
+				}
+			}
+		}
+	],
 	"javascript": {
 		"formatter": {
 			"quoteStyle": "single",
