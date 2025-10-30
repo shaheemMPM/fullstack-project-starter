@@ -6,6 +6,8 @@ export interface ApiClientConfig {
 }
 
 export class ApiClientError extends Error {
+	public validationErrors?: Record<string, string[]>;
+
 	constructor(
 		public statusCode: number,
 		public apiError: ApiError,
@@ -16,6 +18,7 @@ export class ApiClientError extends Error {
 				: apiError.message,
 		);
 		this.name = 'ApiClientError';
+		this.validationErrors = apiError.validationErrors;
 	}
 }
 

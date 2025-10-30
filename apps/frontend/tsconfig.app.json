@@ -32,7 +32,8 @@
 			"@context": ["src/context/index.ts"],
 			"@context/*": ["src/context/*"],
 			"@lib/*": ["src/lib/*"],
-			"@examples/*": ["src/examples/*"]
+			"@examples/*": ["src/examples/*"],
+			"@utils/*": ["src/utils/*"]
 		}
 	},
 	"include": ["src"]
