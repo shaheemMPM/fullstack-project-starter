@@ -49,7 +49,7 @@ const App = () => {
 							<Route path="/" element={<HomePage />} />
 							<Route path="/about" element={<AboutPage />} />
 							<Route path="/api-demo" element={<ApiDemoPage />} />
-							<Route path="/error-test" element={<ErrorTestPage />} />
+							<Route path="/errors-demo" element={<ErrorTestPage />} />
 						</Route>
 
 						{/* 404 catch-all route */}
