@@ -9,9 +9,13 @@ import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
+import { ConfigService } from './shared/services/config.service';
 
 const bootstrap = async () => {
 	const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+	// Get ConfigService
+	const configService = app.get(ConfigService);
 
 	// Global exception filter for consistent error responses
 	app.useGlobalFilters(new HttpExceptionFilter());
@@ -41,9 +45,9 @@ const bootstrap = async () => {
 	app.setGlobalPrefix('api');
 
 	// Enable CORS in development only
-	if (process.env.NODE_ENV !== 'production') {
+	if (configService.isDevelopment) {
 		app.enableCors({
-			origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+			origin: configService.corsOrigin,
 			credentials: true,
 		});
 	}
@@ -62,7 +66,7 @@ const bootstrap = async () => {
 		app.setBaseViewsDir(frontendDistPath);
 	}
 
-	const port = process.env.PORT || 3000;
+	const port = configService.port;
 	await app.listen(port);
 	console.log(`Application is running on: http://localhost:${port}`);
 };

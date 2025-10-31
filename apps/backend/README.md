@@ -47,6 +47,12 @@ backend/
 │   │       ├── health.controller.ts
 │   │       └── health.types.ts
 │   │
+│   ├── shared/                # Global shared module
+│   │   ├── services/          # Shared services
+│   │   │   ├── config.service.ts    # Environment config
+│   │   │   └── redis.service.ts     # Redis operations
+│   │   └── shared.module.ts   # Shared module definition
+│   │
 │   ├── common/
 │   │   ├── filters/           # Global exception filters
 │   │   └── exceptions/        # Custom exceptions
@@ -92,14 +98,30 @@ pnpm start
 Create `.env` file in this directory:
 
 ```env
+# Database
 DATABASE_URL=postgresql://user:password@localhost:5432/dbname
+
+# JWT Configuration
 JWT_SECRET=your-secret-key-here
+JWT_EXPIRES_IN=7d
+
+# Redis (for BullMQ queues and caching)
+# Format: redis://[username:password@]host[:port][?family=0]
+REDIS_URL=redis://localhost:6379
+
+# Server Configuration
+PORT=3000
 NODE_ENV=development
+
+# CORS
+CORS_ORIGIN=http://localhost:5173
 ```
 
 ## Path Aliases
 
 - `@modules/*` → `src/modules/*`
+- `@shared` → `src/shared/shared.module.ts`
+- `@shared/*` → `src/shared/*`
 - `@db` → `src/db/index.ts`
 - `@db/*` → `src/db/*`
 - `@types` → `src/types/index.ts`
@@ -147,6 +169,333 @@ pnpm db:generate
 - Use `@Public()` decorator to bypass authentication
 - Tokens expire based on JWT_SECRET configuration
 - Passwords hashed with bcrypt (10 rounds)
+
+## Shared Module
+
+The **SharedModule** is a global module that provides shared services to all modules in the application. It's registered in `app.module.ts` with the `@Global()` decorator, making its services available without needing to import it in every module.
+
+### ConfigService
+
+Centralized service for accessing environment variables. **Always use ConfigService instead of `process.env` directly** to ensure type safety and consistent defaults.
+
+#### Available Getters
+
+```typescript
+import { ConfigService } from '@shared/services/config.service';
+
+@Injectable()
+export class YourService {
+  constructor(private configService: ConfigService) {}
+
+  someMethod() {
+    // Environment checks
+    if (this.configService.isDevelopment) {
+      // Development-only code
+    }
+    if (this.configService.isProduction) {
+      // Production-only code
+    }
+
+    // Get environment variable as string
+    const apiKey = this.configService.get('API_KEY');
+
+    // Get environment variable as number
+    const timeout = this.configService.getNumber('TIMEOUT');
+
+    // Predefined configuration getters
+    const nodeEnv = this.configService.nodeEnv;           // 'development' | 'production'
+    const dbUrl = this.configService.databaseUrl;         // string
+    const jwtSecret = this.configService.jwtSecret;       // string
+    const jwtExpires = this.configService.jwtExpiresIn;   // string | number
+    const corsOrigin = this.configService.corsOrigin;     // string
+    const port = this.configService.port;                 // number
+
+    // Redis configuration (parsed from REDIS_URL)
+    const redisConfig = this.configService.redisConfig;
+    // Returns: { username, password, port, host, family }
+  }
+}
+```
+
+#### Usage Examples
+
+**In Services:**
+```typescript
+import { ConfigService } from '@shared/services/config.service';
+
+@Injectable()
+export class EmailService {
+  constructor(private configService: ConfigService) {}
+
+  async sendEmail() {
+    const apiKey = this.configService.get('SENDGRID_API_KEY');
+    // Use apiKey...
+  }
+}
+```
+
+**In Module Configuration:**
+```typescript
+import { ConfigService } from '@shared/services/config.service';
+
+@Module({
+  imports: [
+    JwtModule.registerAsync({
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        secret: configService.jwtSecret,
+        signOptions: {
+          expiresIn: configService.jwtExpiresIn,
+        },
+      }),
+    }),
+  ],
+})
+export class AuthModule {}
+```
+
+**In main.ts:**
+```typescript
+const app = await NestFactory.create(AppModule);
+const configService = app.get(ConfigService);
+
+const port = configService.port;
+await app.listen(port);
+```
+
+#### Why Use ConfigService?
+
+✅ **Type Safety**: Get typed values (number, string) instead of string | undefined
+✅ **Defaults**: Sensible defaults for missing environment variables
+✅ **Centralized**: Single source of truth for all configuration
+✅ **Testable**: Easy to mock in tests
+✅ **Refactorable**: Change env var names in one place
+
+### RedisService
+
+Wrapper around `ioredis` that provides common Redis operations with proper lifecycle management.
+
+#### Available Methods
+
+```typescript
+import { RedisService } from '@shared/services/redis.service';
+
+@Injectable()
+export class YourService {
+  constructor(private redisService: RedisService) {}
+
+  async cacheExample() {
+    // Set string value
+    await this.redisService.set('user:123', 'John Doe', 3600);  // TTL in seconds
+
+    // Get string value
+    const name = await this.redisService.get('user:123');  // 'John Doe' | null
+
+    // Set JSON value (automatically serialized)
+    await this.redisService.setJson('user:123', { name: 'John', age: 30 }, 3600);
+
+    // Get JSON value (automatically deserialized)
+    const user = await this.redisService.getJson<User>('user:123');  // User | null
+
+    // Delete key
+    await this.redisService.del('user:123');
+
+    // Check if key exists
+    const exists = await this.redisService.exists('user:123');  // boolean
+
+    // Set expiration (TTL in seconds)
+    await this.redisService.expire('user:123', 7200);
+
+    // Get remaining TTL
+    const ttl = await this.redisService.ttl('user:123');  // seconds remaining
+
+    // Access raw Redis client for advanced operations
+    const client = this.redisService.getClient();
+    await client.lpush('queue', 'item1', 'item2');
+  }
+}
+```
+
+#### Usage Examples
+
+**Caching Database Queries:**
+```typescript
+@Injectable()
+export class UserService {
+  constructor(
+    private redisService: RedisService,
+  ) {}
+
+  async getUserById(id: number) {
+    // Try cache first
+    const cacheKey = `user:${id}`;
+    const cached = await this.redisService.getJson<User>(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
+    // Cache miss - fetch from database
+    const user = await db.query.users.findFirst({
+      where: eq(users.id, id),
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    // Cache for 1 hour
+    await this.redisService.setJson(cacheKey, user, 3600);
+
+    return user;
+  }
+
+  async updateUser(id: number, data: UpdateUserDto) {
+    const updated = await db.update(users)
+      .set(data)
+      .where(eq(users.id, id))
+      .returning();
+
+    // Invalidate cache
+    await this.redisService.del(`user:${id}`);
+
+    return updated[0];
+  }
+}
+```
+
+**Session Management:**
+```typescript
+@Injectable()
+export class SessionService {
+  constructor(private redisService: RedisService) {}
+
+  async createSession(userId: number, sessionData: any) {
+    const sessionId = randomUUID();
+    const key = `session:${sessionId}`;
+
+    // Store session for 24 hours
+    await this.redisService.setJson(key, { userId, ...sessionData }, 86400);
+
+    return sessionId;
+  }
+
+  async getSession(sessionId: string) {
+    return await this.redisService.getJson(`session:${sessionId}`);
+  }
+
+  async destroySession(sessionId: string) {
+    await this.redisService.del(`session:${sessionId}`);
+  }
+}
+```
+
+**Rate Limiting:**
+```typescript
+@Injectable()
+export class RateLimitService {
+  constructor(private redisService: RedisService) {}
+
+  async checkRateLimit(userId: number, limit: number = 100): Promise<boolean> {
+    const key = `rate:${userId}`;
+    const client = this.redisService.getClient();
+
+    const count = await client.incr(key);
+
+    if (count === 1) {
+      // First request - set TTL to 1 hour
+      await this.redisService.expire(key, 3600);
+    }
+
+    return count <= limit;
+  }
+}
+```
+
+#### Why Use RedisService?
+
+✅ **Lifecycle Management**: Automatic connection setup and cleanup
+✅ **Type Safety**: TypeScript support with generics for JSON methods
+✅ **Convenience**: Common operations wrapped in simple methods
+✅ **Flexibility**: Access raw client for advanced use cases
+✅ **Testable**: Easy to mock in tests
+
+### When to Use What
+
+| Use Case | Service | Method |
+|----------|---------|--------|
+| Read environment variables | ConfigService | `configService.get('KEY')` |
+| Cache database queries | RedisService | `redisService.setJson()` / `getJson()` |
+| Session storage | RedisService | `redisService.setJson()` with TTL |
+| Rate limiting | RedisService | `getClient().incr()` |
+| Background jobs | BullMQ | Uses RedisService internally |
+| Feature flags | ConfigService | `configService.get('FEATURE_X_ENABLED')` |
+
+### Shared Module Best Practices
+
+#### 1. Always Use ConfigService for Environment Variables
+
+```typescript
+// ❌ Bad - Direct access
+const port = process.env.PORT || 3000;
+
+// ✅ Good - Through ConfigService
+const port = this.configService.port;
+```
+
+#### 2. Cache Expensive Operations
+
+```typescript
+// ✅ Good - Cache database queries
+const cacheKey = `expensive-query:${params}`;
+let result = await this.redisService.getJson(cacheKey);
+
+if (!result) {
+  result = await this.performExpensiveQuery(params);
+  await this.redisService.setJson(cacheKey, result, 3600);
+}
+```
+
+#### 3. Invalidate Cache on Updates
+
+```typescript
+// ✅ Good - Clear cache after updates
+async updateUser(id: number, data: UpdateUserDto) {
+  const updated = await db.update(users).set(data);
+  await this.redisService.del(`user:${id}`);  // Clear cache
+  return updated;
+}
+```
+
+#### 4. Use Appropriate TTLs
+
+```typescript
+// Short TTL for frequently changing data
+await this.redisService.setJson('stock-price', price, 60);  // 1 minute
+
+// Long TTL for rarely changing data
+await this.redisService.setJson('app-config', config, 86400);  // 24 hours
+
+// No TTL for permanent data (use with caution)
+await this.redisService.set('feature-flag', 'enabled');
+```
+
+#### 5. Handle Redis Connection Failures Gracefully
+
+```typescript
+async getUserById(id: number) {
+  try {
+    // Try cache
+    const cached = await this.redisService.getJson(`user:${id}`);
+    if (cached) return cached;
+  } catch (error) {
+    // Log but don't fail - fallback to database
+    console.error('Redis error:', error);
+  }
+
+  // Fetch from database
+  return await db.query.users.findFirst({ where: eq(users.id, id) });
+}
+```
 
 ## Error Handling
 
@@ -919,9 +1268,9 @@ await this.queue.add(EMAIL_JOBS.SEND_EMAIL, data);
 ### Environment Variables
 
 ```env
-# Redis connection
-REDIS_HOST=localhost
-REDIS_PORT=6379
+# Redis connection (for BullMQ and caching)
+# Format: redis://[username:password@]host[:port][?family=0]
+REDIS_URL=redis://localhost:6379
 ```
 
 ### Troubleshooting
@@ -929,7 +1278,7 @@ REDIS_PORT=6379
 **Issue: Jobs not processing**
 - Check Redis is running: `redis-cli ping` (should return "PONG")
 - Check logs for connection errors
-- Verify REDIS_HOST and REDIS_PORT in `.env`
+- Verify REDIS_URL in `.env` is correct
 
 **Issue: Jobs failing repeatedly**
 - Check job error in Bull Board

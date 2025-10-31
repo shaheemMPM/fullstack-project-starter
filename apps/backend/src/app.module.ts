@@ -5,15 +5,19 @@ import { HealthModule } from '@modules/health/health.module';
 import { BullModule } from '@nestjs/bullmq';
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
+import { ConfigService } from '@shared/services/config.service';
+import { SharedModule } from '@shared/shared.module';
 
 @Module({
 	imports: [
+		// Shared services (global)
+		SharedModule,
 		// BullMQ configuration (shared by all queue modules)
-		BullModule.forRoot({
-			connection: {
-				host: process.env.REDIS_HOST || 'localhost',
-				port: Number.parseInt(process.env.REDIS_PORT || '6379', 10),
-			},
+		BullModule.forRootAsync({
+			inject: [ConfigService],
+			useFactory: (configService: ConfigService) => ({
+				connection: configService.redisConfig,
+			}),
 		}),
 		HealthModule,
 		AuthModule,

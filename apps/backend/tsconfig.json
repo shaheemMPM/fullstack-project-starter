@@ -31,7 +31,9 @@
 			"@common": ["src/common/index.ts"],
 			"@common/*": ["src/common/*"],
 			"@constants": ["src/constants/index.ts"],
-			"@constants/*": ["src/constants/*"]
+			"@constants/*": ["src/constants/*"],
+			"@shared": ["src/shared/shared.module.ts"],
+			"@shared/*": ["src/shared/*"]
 		}
 	}
 }
