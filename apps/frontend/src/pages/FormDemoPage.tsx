@@ -1,17 +1,7 @@
 import { toast } from '@components/ToastContainer';
 import { useForm } from '@tanstack/react-form';
+import { getErrorMessage } from '@utils/form';
 import { z } from 'zod';
-
-// Helper to extract error message from TanStack Form + Zod
-const getErrorMessage = (errors: unknown[]): string | null => {
-	if (errors.length === 0) return null;
-	const error = errors[0];
-	if (typeof error === 'string') return error;
-	if (error && typeof error === 'object' && 'message' in error) {
-		return String(error.message);
-	}
-	return null;
-};
 
 // Zod schema for form validation
 const formSchema = z.object({
