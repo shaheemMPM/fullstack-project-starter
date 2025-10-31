@@ -1,18 +1,39 @@
 import { toast } from '@components/ToastContainer';
 import { useForm } from '@tanstack/react-form';
+import { z } from 'zod';
 
-interface FormValues {
-	username: string;
-	email: string;
-	age: number;
-	birthdate: string;
-	bio: string;
-	role: string;
-	favoriteColor: string;
-	gender: string;
-	newsletter: boolean;
-	terms: boolean;
-}
+// Helper to extract error message from TanStack Form + Zod
+const getErrorMessage = (errors: unknown[]): string | null => {
+	if (errors.length === 0) return null;
+	const error = errors[0];
+	if (typeof error === 'string') return error;
+	if (error && typeof error === 'object' && 'message' in error) {
+		return String(error.message);
+	}
+	return null;
+};
+
+// Zod schema for form validation
+const formSchema = z.object({
+	username: z
+		.string()
+		.min(3, 'Username must be at least 3 characters')
+		.max(20, 'Username must be at most 20 characters'),
+	email: z.email({ message: 'Please enter a valid email address' }),
+	age: z
+		.number()
+		.min(13, 'You must be at least 13 years old')
+		.max(120, 'Please enter a valid age'),
+	birthdate: z.string().min(1, 'Birthdate is required'),
+	bio: z.string(),
+	role: z.string().min(1, 'Please select a role'),
+	favoriteColor: z.string(),
+	gender: z.string().min(1, 'Please select a gender'),
+	newsletter: z.boolean(),
+	terms: z.boolean().refine((val) => val === true, {
+		message: 'You must accept the terms and conditions',
+	}),
+});
 
 const FormDemoPage = () => {
 	const form = useForm({
@@ -27,7 +48,10 @@ const FormDemoPage = () => {
 			gender: '',
 			newsletter: false,
 			terms: false,
-		} as FormValues,
+		},
+		validators: {
+			onChange: formSchema,
+		},
 		onSubmit: async ({ value }) => {
 			// Simulate API call
 			await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -40,11 +64,11 @@ const FormDemoPage = () => {
 		<div className="max-w-3xl mx-auto">
 			<div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8">
 				<h1 className="text-3xl font-bold mb-2 text-gray-900 dark:text-white">
-					Form Demo (TanStack Form)
+					Form Demo (TanStack Form + Zod)
 				</h1>
 				<p className="text-gray-600 dark:text-gray-400 mb-8">
-					Comprehensive form demo using TanStack Form v1 with various input
-					types
+					Comprehensive form demo using TanStack Form v1 with Zod validation and
+					various input types
 				</p>
 
 				<form
@@ -58,14 +82,6 @@ const FormDemoPage = () => {
 					{/* Text Input - Username */}
 					<form.Field
 						name="username"
-						validators={{
-							onChange: ({ value }) => {
-								if (!value) return 'Username is required';
-								if (value.length < 3)
-									return 'Username must be at least 3 characters';
-								return undefined;
-							},
-						}}
 						children={(field) => (
 							<div>
 								<label
@@ -83,16 +99,16 @@ const FormDemoPage = () => {
 									onChange={(e) => field.handleChange(e.target.value)}
 									className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 transition-colors
 										${
-											field.state.meta.errors.length > 0
+											getErrorMessage(field.state.meta.errors)
 												? 'border-red-500 focus:ring-red-500'
 												: 'border-gray-300 dark:border-gray-600 focus:ring-blue-500'
 										}
 										dark:bg-gray-700 dark:text-white`}
 									placeholder="Enter your username"
 								/>
-								{field.state.meta.errors.length > 0 && (
+								{getErrorMessage(field.state.meta.errors) && (
 									<p className="mt-1 text-sm text-red-500">
-										{field.state.meta.errors[0]}
+										{getErrorMessage(field.state.meta.errors)}
 									</p>
 								)}
 							</div>
@@ -102,15 +118,6 @@ const FormDemoPage = () => {
 					{/* Email Input */}
 					<form.Field
 						name="email"
-						validators={{
-							onChange: ({ value }) => {
-								if (!value) return 'Email is required';
-								if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
-									return 'Please enter a valid email address';
-								}
-								return undefined;
-							},
-						}}
 						children={(field) => (
 							<div>
 								<label
@@ -128,16 +135,16 @@ const FormDemoPage = () => {
 									onChange={(e) => field.handleChange(e.target.value)}
 									className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 transition-colors
 										${
-											field.state.meta.errors.length > 0
+											getErrorMessage(field.state.meta.errors)
 												? 'border-red-500 focus:ring-red-500'
 												: 'border-gray-300 dark:border-gray-600 focus:ring-blue-500'
 										}
 										dark:bg-gray-700 dark:text-white`}
 									placeholder="you@example.com"
 								/>
-								{field.state.meta.errors.length > 0 && (
+								{getErrorMessage(field.state.meta.errors) && (
 									<p className="mt-1 text-sm text-red-500">
-										{field.state.meta.errors[0]}
+										{getErrorMessage(field.state.meta.errors)}
 									</p>
 								)}
 							</div>
@@ -147,13 +154,6 @@ const FormDemoPage = () => {
 					{/* Number Input - Age */}
 					<form.Field
 						name="age"
-						validators={{
-							onChange: ({ value }) => {
-								if (value < 13) return 'You must be at least 13 years old';
-								if (value > 120) return 'Please enter a valid age';
-								return undefined;
-							},
-						}}
 						children={(field) => (
 							<div>
 								<label
@@ -173,15 +173,15 @@ const FormDemoPage = () => {
 									max={120}
 									className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 transition-colors
 										${
-											field.state.meta.errors.length > 0
+											getErrorMessage(field.state.meta.errors)
 												? 'border-red-500 focus:ring-red-500'
 												: 'border-gray-300 dark:border-gray-600 focus:ring-blue-500'
 										}
 										dark:bg-gray-700 dark:text-white`}
 								/>
-								{field.state.meta.errors.length > 0 && (
+								{getErrorMessage(field.state.meta.errors) && (
 									<p className="mt-1 text-sm text-red-500">
-										{field.state.meta.errors[0]}
+										{getErrorMessage(field.state.meta.errors)}
 									</p>
 								)}
 							</div>
@@ -191,12 +191,6 @@ const FormDemoPage = () => {
 					{/* Date Input */}
 					<form.Field
 						name="birthdate"
-						validators={{
-							onChange: ({ value }) => {
-								if (!value) return 'Birthdate is required';
-								return undefined;
-							},
-						}}
 						children={(field) => (
 							<div>
 								<label
@@ -214,15 +208,15 @@ const FormDemoPage = () => {
 									onChange={(e) => field.handleChange(e.target.value)}
 									className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 transition-colors
 										${
-											field.state.meta.errors.length > 0
+											getErrorMessage(field.state.meta.errors)
 												? 'border-red-500 focus:ring-red-500'
 												: 'border-gray-300 dark:border-gray-600 focus:ring-blue-500'
 										}
 										dark:bg-gray-700 dark:text-white`}
 								/>
-								{field.state.meta.errors.length > 0 && (
+								{getErrorMessage(field.state.meta.errors) && (
 									<p className="mt-1 text-sm text-red-500">
-										{field.state.meta.errors[0]}
+										{getErrorMessage(field.state.meta.errors)}
 									</p>
 								)}
 							</div>
@@ -285,12 +279,6 @@ const FormDemoPage = () => {
 					{/* Select Dropdown */}
 					<form.Field
 						name="role"
-						validators={{
-							onChange: ({ value }) => {
-								if (!value) return 'Please select a role';
-								return undefined;
-							},
-						}}
 						children={(field) => (
 							<div>
 								<label
@@ -307,7 +295,7 @@ const FormDemoPage = () => {
 									onChange={(e) => field.handleChange(e.target.value)}
 									className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 transition-colors
 										${
-											field.state.meta.errors.length > 0
+											getErrorMessage(field.state.meta.errors)
 												? 'border-red-500 focus:ring-red-500'
 												: 'border-gray-300 dark:border-gray-600 focus:ring-blue-500'
 										}
@@ -319,9 +307,9 @@ const FormDemoPage = () => {
 									<option value="manager">Manager</option>
 									<option value="other">Other</option>
 								</select>
-								{field.state.meta.errors.length > 0 && (
+								{getErrorMessage(field.state.meta.errors) && (
 									<p className="mt-1 text-sm text-red-500">
-										{field.state.meta.errors[0]}
+										{getErrorMessage(field.state.meta.errors)}
 									</p>
 								)}
 							</div>
@@ -331,12 +319,6 @@ const FormDemoPage = () => {
 					{/* Radio Buttons */}
 					<form.Field
 						name="gender"
-						validators={{
-							onChange: ({ value }) => {
-								if (!value) return 'Please select a gender';
-								return undefined;
-							},
-						}}
 						children={(field) => (
 							<div>
 								<div className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -362,9 +344,9 @@ const FormDemoPage = () => {
 										),
 									)}
 								</div>
-								{field.state.meta.errors.length > 0 && (
+								{getErrorMessage(field.state.meta.errors) && (
 									<p className="mt-1 text-sm text-red-500">
-										{field.state.meta.errors[0]}
+										{getErrorMessage(field.state.meta.errors)}
 									</p>
 								)}
 							</div>
@@ -393,12 +375,6 @@ const FormDemoPage = () => {
 
 						<form.Field
 							name="terms"
-							validators={{
-								onChange: ({ value }) => {
-									if (!value) return 'You must accept the terms and conditions';
-									return undefined;
-								},
-							}}
 							children={(field) => (
 								<div>
 									<label className="flex items-start">
@@ -415,9 +391,9 @@ const FormDemoPage = () => {
 											<span className="text-red-500">*</span>
 										</span>
 									</label>
-									{field.state.meta.errors.length > 0 && (
+									{getErrorMessage(field.state.meta.errors) && (
 										<p className="mt-1 text-sm text-red-500">
-											{field.state.meta.errors[0]}
+											{getErrorMessage(field.state.meta.errors)}
 										</p>
 									)}
 								</div>
