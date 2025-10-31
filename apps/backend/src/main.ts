@@ -3,12 +3,12 @@ import { join } from 'node:path';
 import { createBullBoard } from '@bull-board/api';
 import { BullMQAdapter } from '@bull-board/api/bullMQAdapter';
 import { ExpressAdapter } from '@bull-board/express';
+import { HttpExceptionFilter } from '@common/filters/http-exception.filter';
+import { EmailService } from '@modules/email/email.service';
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
-import { HttpExceptionFilter } from './common/filters/http-exception.filter';
-import { QueueService } from './queue/queue.service';
 
 const bootstrap = async () => {
 	const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -17,12 +17,12 @@ const bootstrap = async () => {
 	app.useGlobalFilters(new HttpExceptionFilter());
 
 	// Setup Bull Board for queue monitoring
-	const queueService = app.get(QueueService);
+	const emailService = app.get(EmailService);
 	const serverAdapter = new ExpressAdapter();
 	serverAdapter.setBasePath('/admin/queues');
 
 	createBullBoard({
-		queues: [new BullMQAdapter(queueService.getEmailQueue())],
+		queues: [new BullMQAdapter(emailService.getEmailQueue())],
 		serverAdapter: serverAdapter,
 	});
 

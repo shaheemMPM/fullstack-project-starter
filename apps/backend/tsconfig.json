@@ -29,7 +29,9 @@
 			"@types": ["src/types/index.ts"],
 			"@types/*": ["src/types/*"],
 			"@common": ["src/common/index.ts"],
-			"@common/*": ["src/common/*"]
+			"@common/*": ["src/common/*"],
+			"@constants": ["src/constants/index.ts"],
+			"@constants/*": ["src/constants/*"]
 		}
 	}
 }

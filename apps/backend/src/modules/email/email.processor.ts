@@ -1,15 +1,16 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import type { Job } from 'bullmq';
-import type { SendEmailJobData } from '../queue.service';
+import { QUEUE_NAMES } from '../../constants';
+import type { SendEmailJobData } from './email.service';
 
 /**
  * Email Processor
  * Processes email jobs from the queue
  */
-@Processor('email')
+@Processor(QUEUE_NAMES.EMAIL)
 export class EmailProcessor extends WorkerHost {
 	async process(job: Job<SendEmailJobData>): Promise<void> {
-		const { to, subject, body: _body } = job.data;
+		const { to, subject } = job.data;
 
 		// Log job processing
 		console.log(`[EmailProcessor] Processing job ${job.id}`);

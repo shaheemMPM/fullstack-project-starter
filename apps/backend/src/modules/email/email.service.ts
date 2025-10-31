@@ -1,6 +1,7 @@
 import { InjectQueue } from '@nestjs/bullmq';
 import { Injectable } from '@nestjs/common';
 import type { Queue } from 'bullmq';
+import { EMAIL_JOBS, QUEUE_NAMES } from '../../constants';
 
 export interface SendEmailJobData {
 	to: string;
@@ -9,24 +10,24 @@ export interface SendEmailJobData {
 }
 
 /**
- * Queue Service
- * Handles adding jobs to queues
+ * Email Service
+ * Handles adding email jobs to the queue
  */
 @Injectable()
-export class QueueService {
-	constructor(@InjectQueue('email') private emailQueue: Queue) {}
+export class EmailService {
+	constructor(@InjectQueue(QUEUE_NAMES.EMAIL) private emailQueue: Queue) {}
 
 	/**
 	 * Add an email to the queue to be sent
 	 * @example
-	 * await queueService.sendEmail({
+	 * await emailService.sendEmail({
 	 *   to: 'user@example.com',
 	 *   subject: 'Welcome!',
 	 *   body: 'Thanks for signing up'
 	 * });
 	 */
 	async sendEmail(data: SendEmailJobData) {
-		const job = await this.emailQueue.add('send-email', data, {
+		const job = await this.emailQueue.add(EMAIL_JOBS.SEND_EMAIL, data, {
 			attempts: 3, // Retry up to 3 times
 			backoff: {
 				type: 'exponential', // Wait longer between each retry
@@ -41,7 +42,7 @@ export class QueueService {
 	}
 
 	/**
-	 * Get the email queue for monitoring
+	 * Get the email queue for monitoring (used by Bull Board)
 	 */
 	getEmailQueue(): Queue {
 		return this.emailQueue;

@@ -37,12 +37,25 @@ backend/
 │   │   │   ├── strategies/    # JWT strategy
 │   │   │   └── decorators/    # @Public() decorator
 │   │   │
+│   │   ├── email/             # Email queue module
+│   │   │   ├── email.controller.ts
+│   │   │   ├── email.service.ts
+│   │   │   ├── email.processor.ts  # Background job processor
+│   │   │   └── email.module.ts
+│   │   │
 │   │   └── health/            # Health check module
 │   │       ├── health.controller.ts
 │   │       └── health.types.ts
 │   │
+│   ├── common/
+│   │   ├── filters/           # Global exception filters
+│   │   └── exceptions/        # Custom exceptions
+│   │
+│   ├── constants/
+│   │   └── queues.ts          # Queue and job name constants
+│   │
 │   ├── db/
-│   │   ├── schema.ts          # Drizzle schema
+│   │   ├── schema/            # Drizzle schemas
 │   │   └── index.ts           # Database client
 │   │
 │   ├── types/
@@ -93,6 +106,8 @@ NODE_ENV=development
 - `@types/*` → `src/types/*`
 - `@common` → `src/common/index.ts`
 - `@common/*` → `src/common/*`
+- `@constants` → `src/constants/index.ts`
+- `@constants/*` → `src/constants/*`
 
 ## API Endpoints
 
@@ -444,9 +459,17 @@ throw new BusinessException('Custom business logic error');
 // The global filter handles everything else automatically!
 ```
 
+
 ## Background Jobs & Queues
 
 The backend uses **BullMQ** for processing background jobs asynchronously with **Redis** as the message broker. **Bull Board** provides a web UI for monitoring queues.
+
+### Architecture
+
+- **BullMQ** is registered globally in `app.module.ts` (shared by all queue modules)
+- Each module registers its own queues (e.g., `EmailModule` registers the email queue)
+- Queue and job names are defined in `src/constants/queues.ts` to avoid typos
+- Processors are colocated with their modules
 
 ### Prerequisites
 
@@ -482,82 +505,104 @@ http://localhost:3000/admin/queues
 #### 1. Add Jobs to Queue
 
 ```typescript
-import { QueueService } from './queue/queue.service';
+import { EmailService } from '@modules/email/email.service';
 
 @Injectable()
-export class YourService {
-  constructor(private queueService: QueueService) {}
+export class AuthService {
+  constructor(private emailService: EmailService) {}
 
-  async someMethod() {
-    // Add email to queue
-    await this.queueService.sendEmail({
-      to: 'user@example.com',
+  async signup(signupDto: SignupDto) {
+    const user = await this.createUser(signupDto);
+    
+    // Add email to queue (non-blocking)
+    await this.emailService.sendEmail({
+      to: user.email,
       subject: 'Welcome!',
       body: 'Thanks for signing up'
     });
+    
+    return user;
   }
 }
 ```
 
-#### 2. Create a New Queue
+#### 2. Create a New Queue Module
 
-**Step 1: Register the queue in `queue.module.ts`:**
+**Step 1: Add queue and job names to `src/constants/queues.ts`:**
 
 ```typescript
-BullModule.registerQueue({
-  name: 'notifications',  // Your queue name
-}),
+export const QUEUE_NAMES = {
+  EMAIL: 'email',
+  NOTIFICATIONS: 'notifications',  // Add your new queue
+} as const;
+
+export const NOTIFICATION_JOBS = {
+  SEND_PUSH: 'send-push',
+  SEND_SMS: 'send-sms',
+} as const;
 ```
 
-**Step 2: Create a processor:**
+**Step 2: Create module directory `src/modules/notifications/`:**
+
+```bash
+mkdir -p src/modules/notifications
+```
+
+**Step 3: Create the module `notifications.module.ts`:**
 
 ```typescript
-// src/queue/processors/notification.processor.ts
-import { Processor, WorkerHost } from '@nestjs/bullmq';
-import { Job } from 'bullmq';
+import { BullModule } from '@nestjs/bullmq';
+import { Module } from '@nestjs/common';
+import { QUEUE_NAMES } from '@constants';
+import { NotificationsController } from './notifications.controller';
+import { NotificationsProcessor } from './notifications.processor';
+import { NotificationsService } from './notifications.service';
 
-export interface NotificationJobData {
+@Module({
+  imports: [
+    // BullMQ is already registered in app.module.ts
+    // Just register your queue here
+    BullModule.registerQueue({
+      name: QUEUE_NAMES.NOTIFICATIONS,
+    }),
+  ],
+  controllers: [NotificationsController],
+  providers: [NotificationsService, NotificationsProcessor],
+  exports: [NotificationsService],
+})
+export class NotificationsModule {}
+```
+
+**Step 4: Create the service `notifications.service.ts`:**
+
+```typescript
+import { InjectQueue } from '@nestjs/bullmq';
+import { Injectable } from '@nestjs/common';
+import type { Queue } from 'bullmq';
+import { NOTIFICATION_JOBS, QUEUE_NAMES } from '@constants';
+
+export interface SendPushJobData {
   userId: number;
+  title: string;
   message: string;
 }
 
-@Processor('notifications')
-export class NotificationProcessor extends WorkerHost {
-  async process(job: Job<NotificationJobData>): Promise<void> {
-    const { userId, message } = job.data;
-    
-    console.log(`Sending notification to user ${userId}: ${message}`);
-    
-    // Your notification logic here
-    await this.sendNotification(userId, message);
-    
-    console.log(`Notification sent to user ${userId}`);
-  }
-
-  private async sendNotification(userId: number, message: string) {
-    // Implement your notification logic
-  }
-}
-```
-
-**Step 3: Add queue methods to `queue.service.ts`:**
-
-```typescript
 @Injectable()
-export class QueueService {
+export class NotificationsService {
   constructor(
-    @InjectQueue('email') private emailQueue: Queue,
-    @InjectQueue('notifications') private notificationQueue: Queue,
+    @InjectQueue(QUEUE_NAMES.NOTIFICATIONS) 
+    private notificationQueue: Queue
   ) {}
 
-  async sendNotification(data: NotificationJobData) {
-    return await this.notificationQueue.add('send-notification', data, {
-      attempts: 3,
-      backoff: {
-        type: 'exponential',
-        delay: 1000,
-      },
-    });
+  async sendPush(data: SendPushJobData) {
+    return await this.notificationQueue.add(
+      NOTIFICATION_JOBS.SEND_PUSH, 
+      data,
+      {
+        attempts: 3,
+        backoff: { type: 'exponential', delay: 1000 },
+      }
+    );
   }
 
   getNotificationQueue(): Queue {
@@ -566,22 +611,88 @@ export class QueueService {
 }
 ```
 
-**Step 4: Register the processor in `queue.module.ts`:**
+**Step 5: Create the processor `notifications.processor.ts`:**
 
 ```typescript
-providers: [QueueService, EmailProcessor, NotificationProcessor],
+import { Processor, WorkerHost } from '@nestjs/bullmq';
+import type { Job } from 'bullmq';
+import { QUEUE_NAMES } from '@constants';
+import type { SendPushJobData } from './notifications.service';
+
+@Processor(QUEUE_NAMES.NOTIFICATIONS)
+export class NotificationsProcessor extends WorkerHost {
+  async process(job: Job<SendPushJobData>): Promise<void> {
+    const { userId, title, message } = job.data;
+    
+    console.log(`Sending push to user ${userId}: ${title}`);
+    
+    // Your notification logic here
+    await this.sendPushNotification(userId, title, message);
+    
+    console.log(`Push sent to user ${userId}`);
+  }
+
+  private async sendPushNotification(
+    userId: number, 
+    title: string, 
+    message: string
+  ) {
+    // Implement your push notification logic
+    // e.g., Firebase Cloud Messaging, OneSignal, etc.
+  }
+}
 ```
 
-**Step 5: Add to Bull Board (in `main.ts`):**
+**Step 6: Register module in `app.module.ts`:**
 
 ```typescript
+@Module({
+  imports: [
+    BullModule.forRoot({ /* Redis config */ }),
+    HealthModule,
+    AuthModule,
+    EmailModule,
+    NotificationsModule,  // Add your module
+  ],
+})
+export class AppModule {}
+```
+
+**Step 7: Add to Bull Board in `main.ts`:**
+
+```typescript
+const emailService = app.get(EmailService);
+const notificationsService = app.get(NotificationsService);
+
 createBullBoard({
   queues: [
-    new BullMQAdapter(queueService.getEmailQueue()),
-    new BullMQAdapter(queueService.getNotificationQueue()),
+    new BullMQAdapter(emailService.getEmailQueue()),
+    new BullMQAdapter(notificationsService.getNotificationQueue()),
   ],
   serverAdapter: serverAdapter,
 });
+```
+
+### Using Queue Constants
+
+Always import and use constants instead of hard-coding strings:
+
+```typescript
+// ❌ Bad - prone to typos
+@InjectQueue('email') private emailQueue: Queue
+
+// ✅ Good - type-safe, autocomplete, refactor-friendly
+import { QUEUE_NAMES } from '@constants';
+@InjectQueue(QUEUE_NAMES.EMAIL) private emailQueue: Queue
+```
+
+```typescript
+// ❌ Bad
+await this.queue.add('send-email', data);
+
+// ✅ Good
+import { EMAIL_JOBS } from '@constants';
+await this.queue.add(EMAIL_JOBS.SEND_EMAIL, data);
 ```
 
 ### Job Options
@@ -589,7 +700,7 @@ createBullBoard({
 Configure job behavior when adding to queue:
 
 ```typescript
-await this.queue.add('job-name', data, {
+await this.queue.add(EMAIL_JOBS.SEND_EMAIL, data, {
   // Retry options
   attempts: 3,                    // Max retry attempts
   backoff: {
@@ -622,7 +733,7 @@ async signup(signupDto: SignupDto): Promise<AuthResponse> {
   const user = await this.createUser(signupDto);
   
   // Queue welcome email (non-blocking)
-  await this.queueService.sendEmail({
+  await this.emailService.sendEmail({
     to: user.email,
     subject: 'Welcome to Our Platform!',
     body: `Hi ${user.name}, thanks for signing up!`
@@ -636,7 +747,7 @@ async signup(signupDto: SignupDto): Promise<AuthResponse> {
 
 ```typescript
 // Create export queue for heavy operations
-@Processor('exports')
+@Processor(QUEUE_NAMES.EXPORTS)
 export class ExportProcessor extends WorkerHost {
   async process(job: Job<ExportJobData>): Promise<void> {
     const { userId, format } = job.data;
@@ -646,7 +757,7 @@ export class ExportProcessor extends WorkerHost {
     const file = await this.generateExport(data, format);
     
     // Send download link via email
-    await this.emailService.send({
+    await this.emailService.sendEmail({
       to: user.email,
       subject: 'Your export is ready',
       body: `Download: ${file.url}`
@@ -659,7 +770,7 @@ export class ExportProcessor extends WorkerHost {
 
 ```typescript
 // Schedule email for later
-await this.queueService.sendEmail(
+await this.emailService.sendEmail(
   {
     to: 'user@example.com',
     subject: 'Reminder',
@@ -678,7 +789,7 @@ await this.queueService.sendEmail(
 Use the test endpoint to queue an email:
 
 ```bash
-curl -X POST http://localhost:3000/api/queue/test-email \
+curl -X POST http://localhost:3000/api/email/send \
   -H "Content-Type: application/json" \
   -d '{
     "to": "test@example.com",
@@ -785,14 +896,24 @@ async process(job: Job): Promise<void> {
 
 ```typescript
 // For quick tasks (emails, notifications)
-await this.queue.add('send-email', data, {
+await this.queue.add(EMAIL_JOBS.SEND_EMAIL, data, {
   timeout: 30000,  // 30 seconds
 });
 
 // For heavy tasks (exports, image processing)
-await this.queue.add('generate-report', data, {
+await this.queue.add(EXPORT_JOBS.GENERATE_REPORT, data, {
   timeout: 300000,  // 5 minutes
 });
+```
+
+#### 5. Use Constants for Type Safety
+
+```typescript
+import { QUEUE_NAMES, EMAIL_JOBS } from '@constants';
+
+// ✅ Type-safe, autocomplete, refactor-friendly
+@InjectQueue(QUEUE_NAMES.EMAIL) private queue: Queue
+await this.queue.add(EMAIL_JOBS.SEND_EMAIL, data);
 ```
 
 ### Environment Variables
@@ -820,28 +941,32 @@ REDIS_PORT=6379
 - Check `http://localhost:3000/admin/queues`
 - Check console for Bull Board setup errors
 
+**Issue: "Cannot find module '@constants'"**
+- TypeScript compiled code uses relative paths
+- Constants are imported at compile time, not runtime
+- This is normal and works correctly
+
 ### Quick Reference
 
 ```typescript
+// Import constants
+import { QUEUE_NAMES, EMAIL_JOBS } from '@constants';
+import { EmailService } from '@modules/email/email.service';
+
+// Inject service
+constructor(private emailService: EmailService) {}
+
 // Add job to queue
-await this.queueService.sendEmail({ to, subject, body });
+await this.emailService.sendEmail({ to, subject, body });
 
-// Add with options
-await this.queue.add('job-name', data, {
-  attempts: 3,
-  delay: 5000,
-  priority: 1,
-});
-
-// Create processor
-@Processor('queue-name')
-export class MyProcessor extends WorkerHost {
-  async process(job: Job): Promise<void> {
-    // Process job
-  }
-}
+// Create new module with queue
+// 1. Add to @constants/queues.ts
+// 2. Create module in @modules/your-module/
+// 3. Import BullModule.registerQueue in your module
+// 4. Create service, processor, controller
+// 5. Register in app.module.ts
+// 6. Add to Bull Board in main.ts
 
 // Access dashboard
 http://localhost:3000/admin/queues
 ```
-
