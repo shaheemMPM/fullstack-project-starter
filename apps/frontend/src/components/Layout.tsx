@@ -57,6 +57,16 @@ const Layout = () => {
 							>
 								About
 							</Link>
+							<Link
+								to="/error-test"
+								className={`transition-colors ${
+									isActive('/error-test')
+										? 'text-blue-600 dark:text-blue-400 font-semibold'
+										: 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+								}`}
+							>
+								Error Test
+							</Link>
 							{user && (
 								<div className="flex items-center gap-4 ml-4 pl-4 border-l border-gray-300 dark:border-gray-600">
 									<span className="text-sm text-gray-600 dark:text-gray-400">

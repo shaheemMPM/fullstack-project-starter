@@ -6,6 +6,7 @@ import ToastContainer from '@components/ToastContainer';
 import { AuthProvider } from '@context';
 import AboutPage from '@pages/AboutPage';
 import ApiDemoPage from '@pages/ApiDemoPage';
+import ErrorTestPage from '@pages/ErrorTestPage';
 import HomePage from '@pages/HomePage';
 import LoginPage from '@pages/LoginPage';
 import NotFoundPage from '@pages/NotFoundPage';
@@ -48,6 +49,7 @@ const App = () => {
 							<Route path="/" element={<HomePage />} />
 							<Route path="/about" element={<AboutPage />} />
 							<Route path="/api-demo" element={<ApiDemoPage />} />
+							<Route path="/error-test" element={<ErrorTestPage />} />
 						</Route>
 
 						{/* 404 catch-all route */}
