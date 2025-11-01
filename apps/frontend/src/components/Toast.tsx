@@ -116,9 +116,7 @@ const Toast = ({ toast, onClose }: ToastProps) => {
 	return (
 		<div
 			className={`flex items-start gap-3 p-4 rounded-lg border shadow-lg max-w-sm transition-all duration-300 ${getBgColor()} ${
-				isExiting
-					? 'opacity-0 translate-x-full'
-					: 'opacity-100 translate-x-0'
+				isExiting ? 'opacity-0 translate-x-full' : 'opacity-100 translate-x-0'
 			}`}
 		>
 			<div className="flex-shrink-0">{getIcon()}</div>
