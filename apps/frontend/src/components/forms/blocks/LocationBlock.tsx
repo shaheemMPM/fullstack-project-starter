@@ -16,16 +16,17 @@ export const locationSchema = z.object({
 	capacity: z.number().min(1, 'Capacity must be at least 1'),
 });
 
+// Infer TypeScript type from Zod schema
+export type LocationValues = z.infer<typeof locationSchema>;
+
 // Default values for the location block
-export const locationDefaults = {
+export const locationDefaults: LocationValues = {
 	venueName: '',
 	address: '',
 	city: '',
 	country: '',
 	capacity: 50,
 };
-
-export type LocationValues = typeof locationDefaults;
 
 /**
  * Reusable Location field group component

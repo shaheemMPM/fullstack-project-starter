@@ -16,15 +16,16 @@ export const pricingSchema = z.object({
 	earlyBirdDeadline: z.string(),
 });
 
+// Infer TypeScript type from Zod schema
+export type PricingValues = z.infer<typeof pricingSchema>;
+
 // Default values for the pricing block
-export const pricingDefaults = {
-	pricingType: 'free' as 'free' | 'fixed' | 'tiered',
+export const pricingDefaults: PricingValues = {
+	pricingType: 'free',
 	price: 0,
 	earlyBirdPrice: 0,
 	earlyBirdDeadline: '',
 };
-
-export type PricingValues = typeof pricingDefaults;
 
 /**
  * Reusable Pricing field group component

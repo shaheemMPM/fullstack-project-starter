@@ -15,15 +15,16 @@ export const dateTimeSchema = z.object({
 	endTime: z.string().min(1, 'End time is required'),
 });
 
+// Infer TypeScript type from Zod schema
+export type DateTimeValues = z.infer<typeof dateTimeSchema>;
+
 // Default values for the date/time block
-export const dateTimeDefaults = {
+export const dateTimeDefaults: DateTimeValues = {
 	startDate: '',
 	endDate: '',
 	startTime: '',
 	endTime: '',
 };
-
-export type DateTimeValues = typeof dateTimeDefaults;
 
 /**
  * Reusable Date & Time field group component

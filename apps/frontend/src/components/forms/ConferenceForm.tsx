@@ -10,19 +10,16 @@ import { getErrorMessage } from '@utils/form';
 import { z } from 'zod';
 import {
 	DateTimeBlock,
-	type DateTimeValues,
 	dateTimeDefaults,
 	dateTimeSchema,
 } from './blocks/DateTimeBlock';
 import {
 	LocationBlock,
-	type LocationValues,
 	locationDefaults,
 	locationSchema,
 } from './blocks/LocationBlock';
 import {
 	PricingBlock,
-	type PricingValues,
 	pricingDefaults,
 	pricingSchema,
 } from './blocks/PricingBlock';
@@ -55,15 +52,8 @@ const conferenceFormSchema = z.object({
 	...pricingSchema.shape,
 });
 
-// Form default values combining shared blocks + conference-specific fields
-type ConferenceFormValues = {
-	conferenceName: string;
-	description: string;
-	tracks: number;
-	keynoteCount: number;
-} & DateTimeValues &
-	LocationValues &
-	PricingValues;
+// Infer TypeScript type from Zod schema
+type ConferenceFormValues = z.infer<typeof conferenceFormSchema>;
 
 const defaultValues: ConferenceFormValues = {
 	conferenceName: '',
@@ -90,9 +80,9 @@ export const ConferenceForm = () => {
 	});
 
 	// Create field maps for the reusable blocks
-	const dateTimeFields = createFieldMap<DateTimeValues>(dateTimeDefaults);
-	const locationFields = createFieldMap<LocationValues>(locationDefaults);
-	const pricingFields = createFieldMap<PricingValues>(pricingDefaults);
+	const dateTimeFields = createFieldMap(dateTimeDefaults);
+	const locationFields = createFieldMap(locationDefaults);
+	const pricingFields = createFieldMap(pricingDefaults);
 
 	return (
 		<div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8">
