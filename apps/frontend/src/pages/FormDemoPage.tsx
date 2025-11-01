@@ -1,51 +1,52 @@
 /**
- * Form Demo Page - Demonstrates TanStack Form v1 composition
- * Shows how to build reusable form blocks and compose them into different forms
+ * Form Demo Page - Demonstrates TanStack Form v1
+ * Shows both simple standalone forms and advanced form composition
  */
 
 import { ConferenceForm } from '@components/forms/ConferenceForm';
+import { ContactForm } from '@components/forms/ContactForm';
 import { WorkshopForm } from '@components/forms/WorkshopForm';
 import { useState } from 'react';
 
-type TabType = 'conference' | 'workshop';
+type TabType = 'simple' | 'conference' | 'workshop';
 
 const FormDemoPage = () => {
-	const [activeTab, setActiveTab] = useState<TabType>('conference');
+	const [activeTab, setActiveTab] = useState<TabType>('simple');
 
 	return (
 		<div className="max-w-4xl mx-auto">
 			<div className="mb-8">
 				<h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
-					Form Composition Demo
+					TanStack Form Demo
 				</h1>
 				<p className="text-lg text-gray-600 dark:text-gray-400 mb-2">
-					TanStack Form v1 with reusable form blocks
+					Simple forms and advanced form composition examples
 				</p>
 				<div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
 					<p>
-						This demo showcases{' '}
 						<span className="font-semibold text-gray-900 dark:text-white">
-							form composition
+							Simple Form:
 						</span>{' '}
-						- the ability to create reusable form blocks that can be shared
-						across multiple forms.
+						Basic standalone form with Zod validation - perfect for simple use
+						cases.
 					</p>
 					<p>
-						Both forms below share the same{' '}
-						<span className="font-mono bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded">
+						<span className="font-semibold text-gray-900 dark:text-white">
+							Composed Forms:
+						</span>{' '}
+						Conference and Workshop forms share reusable blocks (
+						<span className="font-mono bg-gray-100 dark:bg-gray-800 px-1 rounded">
 							DateTimeBlock
 						</span>
 						,{' '}
-						<span className="font-mono bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded">
+						<span className="font-mono bg-gray-100 dark:bg-gray-800 px-1 rounded">
 							LocationBlock
 						</span>
-						, and{' '}
-						<span className="font-mono bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded">
+						,{' '}
+						<span className="font-mono bg-gray-100 dark:bg-gray-800 px-1 rounded">
 							PricingBlock
-						</span>{' '}
-						components, but have different form-specific fields. This pattern
-						makes it easy to maintain consistent validation and UX across your
-						application.
+						</span>
+						) for consistent validation and UX.
 					</p>
 				</div>
 			</div>
@@ -53,6 +54,17 @@ const FormDemoPage = () => {
 			{/* Tabs */}
 			<div className="border-b border-gray-200 dark:border-gray-700 mb-6">
 				<nav className="flex space-x-4">
+					<button
+						type="button"
+						onClick={() => setActiveTab('simple')}
+						className={`px-4 py-3 font-medium text-sm transition-colors border-b-2 ${
+							activeTab === 'simple'
+								? 'border-purple-600 text-purple-600 dark:text-purple-400'
+								: 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:border-gray-300'
+						}`}
+					>
+						Simple Form
+					</button>
 					<button
 						type="button"
 						onClick={() => setActiveTab('conference')}
@@ -80,6 +92,7 @@ const FormDemoPage = () => {
 
 			{/* Tab Content */}
 			<div>
+				{activeTab === 'simple' && <ContactForm />}
 				{activeTab === 'conference' && <ConferenceForm />}
 				{activeTab === 'workshop' && <WorkshopForm />}
 			</div>
