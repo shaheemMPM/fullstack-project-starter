@@ -659,7 +659,7 @@ async createUser(email: string) {
 ```typescript
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { BusinessException } from '@common';
-import { db, users } from '@/db';
+import { db, users } from '@db';
 import { eq } from 'drizzle-orm';
 
 @Injectable()

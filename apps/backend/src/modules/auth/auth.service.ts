@@ -1,3 +1,5 @@
+import type { User } from '@db';
+import { db, users } from '@db';
 import {
 	ConflictException,
 	Injectable,
@@ -6,8 +8,6 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { eq } from 'drizzle-orm';
-import type { User } from '@/db';
-import { db, users } from '@/db';
 import type { AuthResponse, JwtPayload } from './auth.types';
 import type { ChangePasswordDto } from './dto/change-password.dto';
 import type { LoginDto } from './dto/login.dto';
