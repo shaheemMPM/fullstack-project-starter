@@ -6,6 +6,7 @@
 	"scripts": {
 		"dev": "turbo dev",
 		"build": "turbo build",
+		"start": "pnpm --filter backend start",
 		"lint": "turbo lint",
 		"format": "biome format --write .",
 		"check": "biome check .",

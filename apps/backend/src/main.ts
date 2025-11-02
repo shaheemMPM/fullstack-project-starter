@@ -8,6 +8,7 @@ import { EmailService } from '@modules/email/email.service';
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
+import type { NextFunction, Request, Response } from 'express';
 import { AppModule } from './app.module';
 import { ConfigService } from './shared/services/config.service';
 
@@ -29,6 +30,20 @@ const bootstrap = async () => {
 		queues: [new BullMQAdapter(emailService.getEmailQueue())],
 		serverAdapter: serverAdapter,
 	});
+
+	// Simple password protection for Bull Board
+	const bullBoardPassword = configService.get('BULL_BOARD_PASSWORD');
+	app.use(
+		'/admin/queues',
+		(req: Request, res: Response, next: NextFunction) => {
+			const password = req.query.password;
+			if (password === bullBoardPassword) {
+				next();
+			} else {
+				res.status(401).send('Unauthorized: Invalid or missing password');
+			}
+		},
+	);
 
 	app.use('/admin/queues', serverAdapter.getRouter());
 
