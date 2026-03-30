@@ -7,7 +7,8 @@
 		"dev": "sleep 3 && vite",
 		"build": "tsc -b && vite build",
 		"lint": "biome lint .",
-		"preview": "vite preview"
+		"preview": "vite preview",
+		"typecheck": "tsc --project tsconfig.app.json --noEmit"
 	},
 	"dependencies": {
 		"@repo/api-client": "workspace:*",

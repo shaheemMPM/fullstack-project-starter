@@ -1,0 +1,18 @@
+pnpm check:write
+
+# Fail push if biome found errors it couldn't auto-fix
+if [ $? -ne 0 ]; then
+  echo "Biome check failed. Fix the errors above before pushing."
+  exit 1
+fi
+
+# Typecheck all packages and apps
+pnpm --filter @repo/api-client build && \
+pnpm --filter @repo/api-client typecheck && \
+pnpm --filter backend typecheck && \
+pnpm --filter frontend typecheck
+
+if [ $? -ne 0 ]; then
+  echo "Typecheck failed. Fix the type errors above before pushing."
+  exit 1
+fi
